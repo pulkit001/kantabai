@@ -2,6 +2,7 @@
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { formatDate } from '@/lib/utils'
 import { 
   AlertTriangle, 
   Clock, 
@@ -49,12 +50,7 @@ export default function ExpiryView({
     return diffDays
   }
 
-  // Format date
-  const formatDate = (dateString: string | null | undefined) => {
-    if (!dateString) return 'No date'
-    const date = new Date(dateString)
-    return date.toLocaleDateString()
-  }
+  // Note: formatDate is now imported from utils
 
   // Get priority level
   const getPriorityLevel = (days: number | null) => {

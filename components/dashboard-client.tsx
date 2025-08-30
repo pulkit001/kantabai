@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { formatDate } from '@/lib/utils'
 import { ChefHat, Package, AlertTriangle, BookOpen, Plus, Star } from "lucide-react"
 import KitchenSelector from "@/components/kitchen-selector"
 
@@ -223,7 +224,7 @@ export default function DashboardClient({ kitchens, user }: DashboardClientProps
                     </div>
                   )}
                   <div>
-                    <span className="font-medium">Created:</span> {new Date(selectedKitchen.createdAt).toLocaleDateString()}
+                    <span className="font-medium">Created:</span> {formatDate(selectedKitchen.createdAt.toISOString())}
                   </div>
                 </div>
               </div>
