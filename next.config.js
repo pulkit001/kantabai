@@ -7,9 +7,7 @@ const withPWA = require('next-pwa')({
 })
 
 const nextConfig = {
-  experimental: {
-    appDir: true,
-  },
+  // App directory is now stable in Next.js 14
 }
 
 module.exports = withPWA(nextConfig)
