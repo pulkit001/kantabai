@@ -97,6 +97,14 @@ export async function deleteUser(clerkId: string): Promise<void> {
 // Kitchen operations
 export async function createKitchen(kitchenData: NewKitchen): Promise<Kitchen> {
   try {
+    // If this kitchen is being set as default, unset other defaults for this user
+    if (kitchenData.isDefault) {
+      await db
+        .update(kitchens)
+        .set({ isDefault: false, updatedAt: new Date() })
+        .where(and(eq(kitchens.userId, kitchenData.userId), eq(kitchens.isDefault, true)));
+    }
+    
     const [kitchen] = await db.insert(kitchens).values(kitchenData).returning();
     return kitchen;
   } catch (error) {
@@ -115,6 +123,51 @@ export async function getKitchensByUser(userId: string): Promise<Kitchen[]> {
   }
 }
 
+export async function fixMultipleDefaults(userId: string): Promise<void> {
+  try {
+    // Get all kitchens for this user
+    const userKitchens = await getKitchensByUser(userId);
+    const defaultKitchens = userKitchens.filter(k => k.isDefault);
+    
+    // If there are multiple defaults, keep only the oldest one as default
+    if (defaultKitchens.length > 1) {
+      // Sort by creation date and keep the first one
+      const sortedDefaults = defaultKitchens.sort((a, b) => 
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      );
+      const keepDefault = sortedDefaults[0];
+      const removeDefaults = sortedDefaults.slice(1);
+      
+      // Update all other defaults to false
+      for (const kitchen of removeDefaults) {
+        await db
+          .update(kitchens)
+          .set({ isDefault: false, updatedAt: new Date() })
+          .where(eq(kitchens.id, kitchen.id));
+      }
+      
+      console.log(`Fixed multiple defaults for user ${userId}. Kept kitchen ${keepDefault.id} as default.`);
+    }
+    
+    // If no defaults exist and user has kitchens, make the oldest one default
+    if (defaultKitchens.length === 0 && userKitchens.length > 0) {
+      const oldestKitchen = userKitchens.sort((a, b) => 
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      )[0];
+      
+      await db
+        .update(kitchens)
+        .set({ isDefault: true, updatedAt: new Date() })
+        .where(eq(kitchens.id, oldestKitchen.id));
+        
+      console.log(`Set kitchen ${oldestKitchen.id} as default for user ${userId}.`);
+    }
+  } catch (error) {
+    console.error("Error fixing multiple defaults:", error);
+    throw error;
+  }
+}
+
 export async function getDefaultKitchen(userId: string): Promise<Kitchen | null> {
   try {
     const [defaultKitchen] = await db
@@ -124,6 +177,32 @@ export async function getDefaultKitchen(userId: string): Promise<Kitchen | null>
     return defaultKitchen || null;
   } catch (error) {
     console.error("Error getting default kitchen:", error);
+    throw error;
+  }
+}
+
+export async function setDefaultKitchen(kitchenId: number, userId: string): Promise<Kitchen> {
+  try {
+    // First, unset all other defaults for this user
+    await db
+      .update(kitchens)
+      .set({ isDefault: false, updatedAt: new Date() })
+      .where(and(eq(kitchens.userId, userId), eq(kitchens.isDefault, true)));
+    
+    // Set the specified kitchen as default
+    const [updatedKitchen] = await db
+      .update(kitchens)
+      .set({ isDefault: true, updatedAt: new Date() })
+      .where(and(eq(kitchens.id, kitchenId), eq(kitchens.userId, userId)))
+      .returning();
+    
+    if (!updatedKitchen) {
+      throw new Error("Kitchen not found or not owned by user");
+    }
+    
+    return updatedKitchen;
+  } catch (error) {
+    console.error("Error setting default kitchen:", error);
     throw error;
   }
 }
@@ -165,6 +244,7 @@ export async function getExpiringItems(kitchenId: number, days: number = 7) {
       .where(
         and(
           eq(items.kitchenId, kitchenId),
+          sql`${items.expiryDate} > current_date`,
           sql`${items.expiryDate} <= current_date + interval '${days} days'`
         )
       )
@@ -320,8 +400,8 @@ export async function getKitchenStats(kitchenId: number) {
     const [stats] = await db
       .select({
         totalItems: count(items.id),
-        expiringCount: count(sql`CASE WHEN ${items.expiryDate} <= current_date + interval '7 days' THEN 1 END`),
-        expiredCount: count(sql`CASE WHEN ${items.status} = 'Expired' THEN 1 END`),
+        expiringCount: count(sql`CASE WHEN ${items.expiryDate} > current_date AND ${items.expiryDate} <= current_date + interval '7 days' THEN 1 END`),
+        expiredCount: count(sql`CASE WHEN ${items.status} = 'Expired' OR ${items.expiryDate} <= current_date THEN 1 END`),
       })
       .from(items)
       .where(eq(items.kitchenId, kitchenId));

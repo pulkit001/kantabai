@@ -3,7 +3,8 @@ import { redirect } from "next/navigation";
 import { 
   getUserByClerkId, 
   createUserIfNotExists,
-  getKitchensByUser
+  getKitchensByUser,
+  fixMultipleDefaults
 } from "@/lib/db-utils";
 import DashboardClient from "@/components/dashboard-client";
 
@@ -29,7 +30,12 @@ export default async function DashboardPage() {
     });
   }
   
-  const userKitchens = dbUser ? await getKitchensByUser(dbUser.id) : [];
+  // Get user kitchens and fix any multiple defaults
+  let userKitchens: any[] = [];
+  if (dbUser) {
+    await fixMultipleDefaults(dbUser.id);
+    userKitchens = await getKitchensByUser(dbUser.id);
+  }
 
   return (
     <DashboardClient 

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Checkbox } from '@/components/ui/checkbox'
 import { ChefHat, Loader2 } from 'lucide-react'
 
 interface KitchenSetupFormProps {
@@ -18,7 +19,8 @@ export default function KitchenSetupForm({ userId, userEmail }: KitchenSetupForm
   const [formData, setFormData] = useState({
     name: 'My Kitchen',
     location: '',
-    description: ''
+    description: '',
+    isDefault: true
   })
   const router = useRouter()
 
@@ -35,7 +37,6 @@ export default function KitchenSetupForm({ userId, userEmail }: KitchenSetupForm
         body: JSON.stringify({
           ...formData,
           userId,
-          isDefault: true,
         }),
       })
 
@@ -107,6 +108,23 @@ export default function KitchenSetupForm({ userId, userEmail }: KitchenSetupForm
               Optional: Add any details about your kitchen
             </p>
           </div>
+
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="isDefault"
+              checked={formData.isDefault}
+              onCheckedChange={(checked) => setFormData({ ...formData, isDefault: checked === true })}
+            />
+            <Label 
+              htmlFor="isDefault" 
+              className="text-base font-medium cursor-pointer"
+            >
+              Set as default kitchen
+            </Label>
+          </div>
+          <p className="text-sm text-muted-foreground ml-6">
+            Your default kitchen will be selected automatically when you open the app
+          </p>
         </div>
 
         <div className="bg-muted/50 border border-border rounded-lg p-4">
