@@ -99,7 +99,7 @@ export default function IngredientsView({
   }
 
   // Calculate days until expiry
-  const getDaysUntilExpiry = (expiryDate: string | null) => {
+  const getDaysUntilExpiry = (expiryDate: string | null | undefined) => {
     if (!expiryDate) return null
     const today = new Date()
     const expiry = new Date(expiryDate)

@@ -124,7 +124,7 @@ export default function AddIngredientDialog({
         <DialogHeader>
           <DialogTitle>Add New Ingredient</DialogTitle>
           <DialogDescription>
-            Add a new ingredient to your kitchen inventory. Fill in as much detail as you'd like.
+            Add a new ingredient to your kitchen inventory. Fill in as much detail as you&apos;d like.
           </DialogDescription>
         </DialogHeader>
 

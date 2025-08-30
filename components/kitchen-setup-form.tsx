@@ -112,10 +112,10 @@ export default function KitchenSetupForm({ userId, userEmail }: KitchenSetupForm
         <div className="bg-muted/50 border border-border rounded-lg p-4">
           <h3 className="font-semibold mb-2 flex items-center gap-2">
             <ChefHat className="h-5 w-5 text-primary" />
-            What's Next?
+            What&apos;s Next?
           </h3>
           <p className="text-sm text-muted-foreground mb-2">
-            After creating your kitchen, you'll be able to:
+            After creating your kitchen, you&apos;ll be able to:
           </p>
           <ul className="text-sm text-muted-foreground space-y-1 ml-4">
             <li>• Add ingredients with expiry dates</li>

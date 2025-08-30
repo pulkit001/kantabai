@@ -36,7 +36,7 @@ export default async function KitchenSetupPage() {
           Set Up Your Kitchen
         </h1>
         <p className="text-lg text-muted-foreground">
-          Welcome to Kantabai! Let's create your first kitchen to start tracking ingredients.
+          Welcome to Kantabai! Let&apos;s create your first kitchen to start tracking ingredients.
         </p>
       </div>
 

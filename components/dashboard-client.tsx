@@ -74,7 +74,7 @@ export default function DashboardClient({ kitchens, user }: DashboardClientProps
           <div className="mb-6 md:mb-8">
             <h1 className="text-3xl md:text-4xl font-bold mb-2">Kitchen Dashboard</h1>
             <p className="text-muted-foreground text-sm md:text-base">
-              Welcome back, {user.firstName || user.emailAddress}! Let's set up your first kitchen.
+              Welcome back, {user.firstName || user.emailAddress}! Let&apos;s set up your first kitchen.
             </p>
           </div>
           
@@ -110,7 +110,7 @@ export default function DashboardClient({ kitchens, user }: DashboardClientProps
             </div>
             <KitchenSelector 
               kitchens={kitchens}
-              selectedKitchenId={selectedKitchenId}
+              selectedKitchenId={selectedKitchenId || undefined}
               onKitchenSelect={setSelectedKitchenId}
             />
           </div>
