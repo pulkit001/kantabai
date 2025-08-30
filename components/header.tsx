@@ -78,7 +78,7 @@ export default function Header() {
         </DropdownMenu>
 
         <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
-          <div className="w-full flex-1 md:w-auto md:flex-none">
+          <div className="w-full flex-1 md:w-auto md:flex-none hidden sm:block">
             <Button variant="outline" className="inline-flex items-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-transparent shadow-sm hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2 relative w-full justify-start text-sm text-muted-foreground sm:pr-12 md:w-40 lg:w-64">
               <span className="hidden lg:inline-flex">Search documentation...</span>
               <span className="inline-flex lg:hidden">Search...</span>
@@ -91,28 +91,28 @@ export default function Header() {
           <nav className="flex items-center gap-2">
             <ThemeToggle />
             {!isSignedIn ? (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 md:gap-2">
                 <SignInButton mode="modal">
-                  <Button variant="ghost" size="sm">
+                  <Button variant="ghost" size="sm" className="text-xs md:text-sm px-2 md:px-3">
                     Sign In
                   </Button>
                 </SignInButton>
                 <SignUpButton mode="modal">
-                  <Button size="sm">
+                  <Button size="sm" className="text-xs md:text-sm px-2 md:px-3">
                     Sign Up
                   </Button>
                 </SignUpButton>
               </div>
             ) : (
-              <div className="flex items-center gap-4">
-                <span className="text-sm text-muted-foreground hidden sm:inline-block">
+              <div className="flex items-center gap-2 md:gap-4">
+                <span className="text-xs md:text-sm text-muted-foreground hidden md:inline-block">
                   Welcome, {user?.firstName || user?.emailAddresses[0]?.emailAddress}
                 </span>
                 <UserButton 
                   afterSignOutUrl="/"
                   appearance={{
                     elements: {
-                      avatarBox: "h-8 w-8"
+                      avatarBox: "h-7 w-7 md:h-8 md:w-8"
                     }
                   }}
                 />

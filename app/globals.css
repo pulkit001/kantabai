@@ -57,3 +57,38 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* PWA and Mobile Optimizations */
+@layer components {
+  /* Improve touch targets on mobile */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+  
+  /* Smooth scrolling for mobile */
+  html {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Prevent zoom on input focus on iOS */
+  input, textarea, select {
+    font-size: 16px;
+  }
+  
+  /* Better button hover states for touch devices */
+  @media (hover: none) {
+    .hover\:bg-accent:hover {
+      background-color: transparent;
+    }
+  }
+  
+  /* Safe area padding for devices with notches */
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
