@@ -151,8 +151,8 @@ export default function InstallPrompt() {
             <div className="text-xs text-muted-foreground space-y-1">
               <p>To install:</p>
               <p>1. Tap the Share button <span className="inline-block">📤</span></p>
-              <p>2. Select "Add to Home Screen"</p>
-              <p>3. Tap "Add" to confirm</p>
+              <p>2. Select &quot;Add to Home Screen&quot;</p>
+              <p>3. Tap &quot;Add&quot; to confirm</p>
             </div>
           </div>
         )}
