@@ -4,7 +4,17 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { formatDate } from '@/lib/utils'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { 
   Package, 
   Plus, 
@@ -74,6 +84,24 @@ export default function IngredientsView({
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [showInvoiceUpload, setShowInvoiceUpload] = useState(false)
+  const [showEditDialog, setShowEditDialog] = useState(false)
+  const [showQuantityDialog, setShowQuantityDialog] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [selectedIngredient, setSelectedIngredient] = useState<Ingredient | null>(null)
+  const [newQuantity, setNewQuantity] = useState(1)
+  const [editForm, setEditForm] = useState({
+    name: '',
+    brand: '',
+    quantity: 1,
+    unit: '',
+    categoryId: null as number | null,
+    location: '',
+    purchaseDate: '',
+    expiryDate: '',
+    notes: '',
+    barcode: ''
+  })
+  const [isLoading, setIsLoading] = useState(false)
 
   // Filter ingredients
   const filteredIngredients = ingredients.filter(ingredient => {
@@ -105,6 +133,143 @@ export default function IngredientsView({
     const diffTime = expiry.getTime() - today.getTime()
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
     return diffDays
+  }
+
+  // Handle edit ingredient
+  const handleEdit = (ingredient: Ingredient) => {
+    console.log('Edit clicked for:', ingredient.name)
+    setSelectedIngredient(ingredient)
+    
+    // Find category ID from categories array
+    const categoryId = categories.find(cat => cat.name === ingredient.category)?.id || null
+    
+    setEditForm({
+      name: ingredient.name,
+      brand: ingredient.brand || '',
+      quantity: ingredient.quantity,
+      unit: ingredient.unit || '',
+      categoryId,
+      location: ingredient.location || '',
+      purchaseDate: '',
+      expiryDate: ingredient.expiryDate || '',
+      notes: ingredient.notes || '',
+      barcode: ''
+    })
+    
+    setShowEditDialog(true)
+  }
+
+  // Handle update quantity
+  const handleUpdateQuantity = (ingredient: Ingredient) => {
+    console.log('Update quantity clicked for:', ingredient.name)
+    setSelectedIngredient(ingredient)
+    setNewQuantity(ingredient.quantity)
+    setShowQuantityDialog(true)
+  }
+
+  
+  // Handle delete ingredient
+  const handleDelete = async (ingredient: Ingredient) => {
+    console.log('Delete clicked for:', ingredient.name)
+    setSelectedIngredient(ingredient)
+    setShowDeleteDialog(true)
+  }
+
+  // Confirm delete ingredient
+  const confirmDelete = async () => {
+    if (!selectedIngredient) return
+
+    setIsLoading(true)
+    try {
+      const response = await fetch(`/api/ingredients/${selectedIngredient.id}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        setShowDeleteDialog(false)
+        setSelectedIngredient(null)
+        window.location.reload() // Refresh to show updated data
+      } else {
+        const error = await response.json()
+        alert(`Error: ${error.error}`)
+      }
+    } catch (error) {
+      alert('Network error. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Handle quantity update submit
+  const handleQuantitySubmit = async () => {
+    if (!selectedIngredient) return
+
+    setIsLoading(true)
+    try {
+      const response = await fetch(`/api/ingredients/${selectedIngredient.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'updateQuantity',
+          quantity: newQuantity
+        }),
+      })
+
+      if (response.ok) {
+        setShowQuantityDialog(false)
+        setSelectedIngredient(null)
+        window.location.reload() // Refresh to show updated data
+      } else {
+        const error = await response.json()
+        alert(`Error: ${error.error}`)
+      }
+    } catch (error) {
+      alert('Network error. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Handle edit submit
+  const handleEditSubmit = async () => {
+    if (!selectedIngredient) return
+
+    setIsLoading(true)
+    try {
+      const response = await fetch(`/api/ingredients/${selectedIngredient.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'updateItem',
+          itemData: {
+            name: editForm.name,
+            brand: editForm.brand || null,
+            quantity: editForm.quantity,
+            unit: editForm.unit || null,
+            categoryId: editForm.categoryId,
+            location: editForm.location || null,
+            notes: editForm.notes || null,
+          }
+        }),
+      })
+
+      if (response.ok) {
+        setShowEditDialog(false)
+        setSelectedIngredient(null)
+        window.location.reload() // Refresh to show updated data
+      } else {
+        const error = await response.json()
+        alert(`Error: ${error.error}`)
+      }
+    } catch (error) {
+      alert('Network error. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -232,11 +397,33 @@ export default function IngredientsView({
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                      <DropdownMenuItem>Edit</DropdownMenuItem>
-                      <DropdownMenuItem>Update Quantity</DropdownMenuItem>
-                      <DropdownMenuItem>Mark as Consumed</DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onSelect={(e) => {
+                          e.preventDefault()
+                          handleEdit(ingredient)
+                        }}
+                        disabled={isLoading}
+                      >
+                        Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onSelect={(e) => {
+                          e.preventDefault()
+                          handleUpdateQuantity(ingredient)
+                        }}
+                        disabled={isLoading}
+                      >
+                        Update Quantity
+                      </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem className="text-red-600">
+                      <DropdownMenuItem 
+                        className="text-red-600"
+                        onSelect={(e) => {
+                          e.preventDefault()
+                          handleDelete(ingredient)
+                        }}
+                        disabled={isLoading}
+                      >
                         Delete
                       </DropdownMenuItem>
                     </DropdownMenuContent>
@@ -331,6 +518,186 @@ export default function IngredientsView({
           window.location.reload()
         }}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Ingredient</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete <strong>{selectedIngredient?.name}</strong>? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={confirmDelete} 
+              disabled={isLoading}
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Update Quantity Dialog */}
+      <Dialog open={showQuantityDialog} onOpenChange={setShowQuantityDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Update Quantity</DialogTitle>
+            <DialogDescription>
+              Update the quantity for {selectedIngredient?.name}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="quantity">New Quantity</Label>
+              <div className="flex items-center gap-2 mt-2">
+                <Input
+                  id="quantity"
+                  type="number"
+                  min="0"
+                  value={newQuantity}
+                  onChange={(e) => setNewQuantity(parseInt(e.target.value) || 0)}
+                  className="flex-1"
+                />
+                <span className="text-sm text-muted-foreground">
+                  {selectedIngredient?.unit || 'units'}
+                </span>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowQuantityDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleQuantitySubmit} disabled={isLoading}>
+              Update
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Ingredient</DialogTitle>
+            <DialogDescription>
+              Edit details for {selectedIngredient?.name}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="edit-name">Name *</Label>
+              <Input
+                id="edit-name"
+                value={editForm.name}
+                onChange={(e) => setEditForm({...editForm, name: e.target.value})}
+                placeholder="Ingredient name"
+                required
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="edit-brand">Brand</Label>
+              <Input
+                id="edit-brand"
+                value={editForm.brand}
+                onChange={(e) => setEditForm({...editForm, brand: e.target.value})}
+                placeholder="Brand name"
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="edit-quantity">Quantity *</Label>
+                <Input
+                  id="edit-quantity"
+                  type="number"
+                  min="0"
+                  value={editForm.quantity}
+                  onChange={(e) => setEditForm({...editForm, quantity: parseInt(e.target.value) || 0})}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-unit">Unit</Label>
+                <Input
+                  id="edit-unit"
+                  value={editForm.unit}
+                  onChange={(e) => setEditForm({...editForm, unit: e.target.value})}
+                  placeholder="kg, g, l, pcs"
+                />
+              </div>
+            </div>
+            
+            <div>
+              <Label htmlFor="edit-category">Category</Label>
+              <select
+                id="edit-category"
+                value={editForm.categoryId || ''}
+                onChange={(e) => setEditForm({...editForm, categoryId: e.target.value ? parseInt(e.target.value) : null})}
+                className="w-full px-3 py-2 border border-input rounded-md bg-background"
+              >
+                <option value="">Select category</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            <div>
+              <Label htmlFor="edit-location">Storage Location</Label>
+              <select
+                id="edit-location"
+                value={editForm.location}
+                onChange={(e) => setEditForm({...editForm, location: e.target.value})}
+                className="w-full px-3 py-2 border border-input rounded-md bg-background"
+              >
+                <option value="">Select location</option>
+                <option value="Pantry">Pantry</option>
+                <option value="Fridge">Fridge</option>
+                <option value="Freezer">Freezer</option>
+              </select>
+            </div>
+            
+            <div>
+              <Label htmlFor="edit-expiry">Expiry Date</Label>
+              <Input
+                id="edit-expiry"
+                type="date"
+                value={editForm.expiryDate}
+                onChange={(e) => setEditForm({...editForm, expiryDate: e.target.value})}
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="edit-notes">Notes</Label>
+              <Textarea
+                id="edit-notes"
+                value={editForm.notes}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setEditForm({...editForm, notes: e.target.value})}
+                placeholder="Additional notes"
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleEditSubmit} disabled={isLoading}>
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
