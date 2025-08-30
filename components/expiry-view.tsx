@@ -37,6 +37,7 @@ export default function ExpiryView({
   kitchenId
 }: ExpiryViewProps) {
   const [isUpdating, setIsUpdating] = useState(false)
+  const [deletingItem, setDeletingItem] = useState<number | null>(null)
 
   // Calculate days until expiry
   const getDaysUntilExpiry = (expiryDate: string | null | undefined) => {
@@ -74,6 +75,32 @@ export default function ExpiryView({
       case 'warning': return 'bg-yellow-100 text-yellow-800 border-yellow-200'
       case 'normal': return 'bg-green-100 text-green-800 border-green-200'
       default: return 'bg-gray-100 text-gray-800 border-gray-200'
+    }
+  }
+
+  // Handle marking item as used (delete from database)
+  const handleItemUsed = async (itemId: number) => {
+    if (deletingItem) return // Prevent multiple requests
+    
+    setDeletingItem(itemId)
+    try {
+      const response = await fetch(`/api/ingredients/${itemId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (response.ok) {
+        // Refresh the page to show updated data
+        window.location.reload()
+      } else {
+        console.error('Failed to delete item')
+      }
+    } catch (error) {
+      console.error('Error deleting item:', error)
+    } finally {
+      setDeletingItem(null)
     }
   }
 
@@ -116,9 +143,15 @@ export default function ExpiryView({
           <span>Expires: {formatDate(item.expiryDate)}</span>
           
           <div className="flex gap-2">
-            <Button size="sm" variant="outline" className="h-7">
+            <Button 
+              size="sm" 
+              variant="outline" 
+              className="h-7"
+              onClick={() => handleItemUsed(item.id)}
+              disabled={deletingItem === item.id}
+            >
               <CheckCircle className="h-3 w-3 mr-1" />
-              Used
+              {deletingItem === item.id ? 'Removing...' : 'Used'}
             </Button>
             <Button size="sm" variant="outline" className="h-7">
               <RefreshCw className="h-3 w-3 mr-1" />
@@ -219,34 +252,26 @@ export default function ExpiryView({
         )}
       </div>
 
-      {/* Expiring This Month */}
+      {/* Expiring This Month (but not this week) */}
       <div>
         <div className="flex items-center gap-2 mb-4">
           <Calendar className="h-5 w-5 text-blue-600" />
           <h2 className="text-lg font-semibold">
-            Expiring This Month ({expiringMonth.filter(item => {
-              const days = getDaysUntilExpiry(item.expiryDate)
-              return days !== null && days > 7 && days <= 30
-            }).length} items)
+            Expiring Later This Month ({expiringMonth.length} items)
           </h2>
+          <span className="text-sm text-muted-foreground">
+            (8-30 days from now)
+          </span>
         </div>
         
-        {expiringMonth.filter(item => {
-          const days = getDaysUntilExpiry(item.expiryDate)
-          return days !== null && days > 7 && days <= 30
-        }).length === 0 ? (
+        {expiringMonth.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <Calendar className="h-8 w-8 mx-auto mb-2 opacity-50" />
-            <p>No items expiring this month!</p>
+            <p>No items expiring later this month!</p>
           </div>
         ) : (
           <div className="grid gap-3">
-            {expiringMonth
-              .filter(item => {
-                const days = getDaysUntilExpiry(item.expiryDate)
-                return days !== null && days > 7 && days <= 30
-              })
-              .map(renderItemCard)}
+            {expiringMonth.map(renderItemCard)}
           </div>
         )}
       </div>
@@ -272,12 +297,9 @@ export default function ExpiryView({
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-blue-600">
-              {expiringMonth.filter(item => {
-                const days = getDaysUntilExpiry(item.expiryDate)
-                return days !== null && days > 7 && days <= 30
-              }).length}
+              {expiringMonth.length}
             </div>
-            <div className="text-muted-foreground">This Month</div>
+            <div className="text-muted-foreground">Later This Month</div>
           </div>
         </div>
       </div>

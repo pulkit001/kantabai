@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { ChefHat, Package, AlertTriangle, BookOpen, Plus } from "lucide-react"
+import { ChefHat, Package, AlertTriangle, BookOpen, Plus, Star } from "lucide-react"
 import KitchenSelector from "@/components/kitchen-selector"
 
 interface Kitchen {
@@ -34,16 +34,52 @@ export default function DashboardClient({ kitchens, user }: DashboardClientProps
   const [selectedKitchenId, setSelectedKitchenId] = useState<number | null>(null)
   const [kitchenStats, setKitchenStats] = useState<KitchenStats | null>(null)
   const [isLoadingStats, setIsLoadingStats] = useState(false)
+  const [kitchenList, setKitchenList] = useState(kitchens)
+  const [isChangingDefault, setIsChangingDefault] = useState<number | null>(null)
 
-  const selectedKitchen = kitchens.find(k => k.id === selectedKitchenId) || null
+  const selectedKitchen = kitchenList.find(k => k.id === selectedKitchenId) || null
+
+  // Update kitchen list when props change
+  useEffect(() => {
+    setKitchenList(kitchens)
+  }, [kitchens])
 
   // Auto-select default kitchen or first kitchen
   useEffect(() => {
-    if (kitchens.length > 0 && !selectedKitchenId) {
-      const defaultKitchen = kitchens.find(k => k.isDefault) || kitchens[0]
+    if (kitchenList.length > 0 && !selectedKitchenId) {
+      const defaultKitchen = kitchenList.find(k => k.isDefault) || kitchenList[0]
       setSelectedKitchenId(defaultKitchen.id)
     }
-  }, [kitchens, selectedKitchenId])
+  }, [kitchenList, selectedKitchenId])
+
+  // Handle setting kitchen as default
+  const handleSetDefault = async (kitchenId: number) => {
+    if (isChangingDefault) return // Prevent multiple requests
+    
+    setIsChangingDefault(kitchenId)
+    try {
+      const response = await fetch(`/api/kitchens/${kitchenId}/default`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (response.ok) {
+        // Update kitchen list to reflect new default
+        setKitchenList(prev => prev.map(kitchen => ({
+          ...kitchen,
+          isDefault: kitchen.id === kitchenId
+        })))
+      } else {
+        console.error('Failed to set default kitchen')
+      }
+    } catch (error) {
+      console.error('Error setting default kitchen:', error)
+    } finally {
+      setIsChangingDefault(null)
+    }
+  }
 
   // Load kitchen stats when kitchen is selected
   useEffect(() => {
@@ -109,7 +145,7 @@ export default function DashboardClient({ kitchens, user }: DashboardClientProps
               </p>
             </div>
             <KitchenSelector 
-              kitchens={kitchens}
+              kitchens={kitchenList}
               selectedKitchenId={selectedKitchenId || undefined}
               onKitchenSelect={setSelectedKitchenId}
             />
@@ -195,19 +231,37 @@ export default function DashboardClient({ kitchens, user }: DashboardClientProps
               <div className="p-4 md:p-6 border rounded-lg">
                 <h3 className="text-lg font-semibold mb-3">Your Kitchens</h3>
                 <div className="space-y-2">
-                  {kitchens.map((kitchen) => (
+                  {kitchenList.map((kitchen) => (
                     <div key={kitchen.id} className="flex items-center justify-between p-2 rounded border">
-                      <div>
+                      <div className="flex-1">
                         <div className="font-medium">{kitchen.name}</div>
                         {kitchen.location && (
                           <div className="text-sm text-muted-foreground">{kitchen.location}</div>
                         )}
                       </div>
                       <div className="flex items-center gap-2">
-                        {kitchen.isDefault && (
-                          <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
+                        {kitchen.isDefault ? (
+                          <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded flex items-center gap-1">
+                            <Star className="h-3 w-3" />
                             Default
                           </span>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleSetDefault(kitchen.id)}
+                            disabled={isChangingDefault === kitchen.id}
+                            className="text-xs px-2 py-1 h-auto"
+                          >
+                            {isChangingDefault === kitchen.id ? (
+                              "Setting..."
+                            ) : (
+                              <>
+                                <Star className="h-3 w-3 mr-1" />
+                                Set Default
+                              </>
+                            )}
+                          </Button>
                         )}
                         {selectedKitchenId === kitchen.id && (
                           <div className="h-2 w-2 bg-primary rounded-full"></div>

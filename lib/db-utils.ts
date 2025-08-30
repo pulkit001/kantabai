@@ -1,14 +1,21 @@
+/**
+ * Database utilities for the Kantabai kitchen management application
+ * 
+ * This module provides all database operations for:
+ * - User management (Clerk integration)
+ * - Kitchen management (multi-kitchen support with defaults)
+ * - Item/Ingredient tracking (with expiry dates and categories)
+ * - Category management
+ * - Item logging and history
+ */
+
 import { db } from "./db";
 import { 
   users, 
   kitchens, 
   categories, 
   items, 
-  itemLogs, 
-  recipes, 
-  recipeItems,
-  shoppingLists,
-  shoppingListItems 
+  itemLogs
 } from "./schema";
 import { eq, and, desc, count, sql } from "drizzle-orm";
 import type { 
@@ -16,11 +23,12 @@ import type {
   Kitchen, NewKitchen,
   Item, NewItem,
   Category, NewCategory,
-  Recipe, NewRecipe,
   ItemLog, NewItemLog
 } from "./schema";
 
-// User operations
+// ============================================================================
+// USER OPERATIONS
+// ============================================================================
 export async function createUser(userData: NewUser): Promise<User> {
   try {
     const [user] = await db.insert(users).values(userData).returning();
@@ -40,6 +48,12 @@ export async function getUserByClerkId(clerkId: string): Promise<User | null> {
     throw error;
   }
 }
+
+/**
+ * Creates a user if they don't already exist in the database
+ * Used for Clerk authentication integration
+ */
+
 
 export async function createUserIfNotExists(userData: {
   clerkId: string;
@@ -94,7 +108,13 @@ export async function deleteUser(clerkId: string): Promise<void> {
   }
 }
 
-// Kitchen operations
+// ============================================================================
+// KITCHEN OPERATIONS
+// ============================================================================
+/**
+ * Creates a new kitchen and handles default kitchen logic
+ * Automatically unsets other default kitchens for the user if this one is set as default
+ */
 export async function createKitchen(kitchenData: NewKitchen): Promise<Kitchen> {
   try {
     // If this kitchen is being set as default, unset other defaults for this user
@@ -207,7 +227,9 @@ export async function setDefaultKitchen(kitchenId: number, userId: string): Prom
   }
 }
 
-// Item operations
+// ============================================================================
+// ITEM/INGREDIENT OPERATIONS
+// ============================================================================
 export async function getItemsByKitchen(kitchenId: number) {
   try {
     const kitchenItems = await db
@@ -245,13 +267,38 @@ export async function getExpiringItems(kitchenId: number, days: number = 7) {
         and(
           eq(items.kitchenId, kitchenId),
           sql`${items.expiryDate} > current_date`,
-          sql`${items.expiryDate} <= current_date + interval '${days} days'`
+          sql`${items.expiryDate} <= current_date + interval ${sql.raw(`'${days} days'`)}`
         )
       )
       .orderBy(items.expiryDate);
     return expiringItems;
   } catch (error) {
     console.error("Error getting expiring items:", error);
+    throw error;
+  }
+}
+
+/**
+ * Gets items expiring this month but NOT this week (8-30 days from now)
+ * Used to separate weekly vs monthly expiry tracking
+ */
+export async function getExpiringItemsThisMonth(kitchenId: number) {
+  try {
+    // Get items expiring within 30 days but NOT within 7 days (this month but not this week)
+    const expiringItems = await db
+      .select()
+      .from(items)
+      .where(
+        and(
+          eq(items.kitchenId, kitchenId),
+          sql`${items.expiryDate} > current_date + interval ${sql.raw("'7 days'")}`,
+          sql`${items.expiryDate} <= current_date + interval ${sql.raw("'30 days'")}`
+        )
+      )
+      .orderBy(items.expiryDate);
+    return expiringItems;
+  } catch (error) {
+    console.error("Error getting expiring items this month:", error);
     throw error;
   }
 }
@@ -307,7 +354,32 @@ export async function updateItemQuantity(itemId: number, newQuantity: number, us
   }
 }
 
-// Item log operations
+export async function deleteItem(itemId: number, userId?: string): Promise<void> {
+  try {
+    // Get current item for logging
+    const [currentItem] = await db.select().from(items).where(eq(items.id, itemId));
+    if (!currentItem) throw new Error("Item not found");
+
+    // Log the removal action
+    await createItemLog({
+      itemId,
+      action: "Removed",
+      quantity: 0,
+      previousQuantity: currentItem.quantity,
+      userId,
+    });
+
+    // Delete the item
+    await db.delete(items).where(eq(items.id, itemId));
+  } catch (error) {
+    console.error("Error deleting item:", error);
+    throw error;
+  }
+}
+
+// ============================================================================
+// ITEM LOGGING & HISTORY
+// ============================================================================
 export async function createItemLog(logData: NewItemLog): Promise<ItemLog> {
   try {
     const [log] = await db.insert(itemLogs).values(logData).returning();
@@ -332,7 +404,9 @@ export async function getItemHistory(itemId: number): Promise<ItemLog[]> {
   }
 }
 
-// Category operations
+// ============================================================================
+// CATEGORY OPERATIONS
+// ============================================================================
 export async function getAllCategories(): Promise<Category[]> {
   try {
     const allCategories = await db.select().from(categories).orderBy(categories.name);
@@ -353,54 +427,15 @@ export async function createCategory(categoryData: NewCategory): Promise<Categor
   }
 }
 
-// Recipe operations
-export async function getRecipesByKitchen(kitchenId: number): Promise<Recipe[]> {
-  try {
-    const kitchenRecipes = await db
-      .select()
-      .from(recipes)
-      .where(eq(recipes.kitchenId, kitchenId))
-      .orderBy(desc(recipes.createdAt));
-    return kitchenRecipes;
-  } catch (error) {
-    console.error("Error getting recipes by kitchen:", error);
-    throw error;
-  }
-}
-
-export async function getRecipeWithIngredients(recipeId: number) {
-  try {
-    const [recipe] = await db.select().from(recipes).where(eq(recipes.id, recipeId));
-    if (!recipe) return null;
-
-    const ingredients = await db
-      .select({
-        id: recipeItems.id,
-        itemName: recipeItems.itemName,
-        requiredQuantity: recipeItems.requiredQuantity,
-        unit: recipeItems.unit,
-        notes: recipeItems.notes,
-        isOptional: recipeItems.isOptional,
-        category: categories.name,
-      })
-      .from(recipeItems)
-      .leftJoin(categories, eq(recipeItems.categoryId, categories.id))
-      .where(eq(recipeItems.recipeId, recipeId));
-
-    return { ...recipe, ingredients };
-  } catch (error) {
-    console.error("Error getting recipe with ingredients:", error);
-    throw error;
-  }
-}
-
-// Kitchen stats
+// ============================================================================
+// KITCHEN STATISTICS & ANALYTICS
+// ============================================================================
 export async function getKitchenStats(kitchenId: number) {
   try {
     const [stats] = await db
       .select({
         totalItems: count(items.id),
-        expiringCount: count(sql`CASE WHEN ${items.expiryDate} > current_date AND ${items.expiryDate} <= current_date + interval '7 days' THEN 1 END`),
+        expiringCount: count(sql`CASE WHEN ${items.expiryDate} > current_date AND ${items.expiryDate} <= current_date + interval ${sql.raw("'7 days'")} THEN 1 END`),
         expiredCount: count(sql`CASE WHEN ${items.status} = 'Expired' OR ${items.expiryDate} <= current_date THEN 1 END`),
       })
       .from(items)
@@ -413,13 +448,3 @@ export async function getKitchenStats(kitchenId: number) {
   }
 }
 
-// Legacy post functions (for compatibility with existing dashboard)
-export async function getPostsByUser(userId: string) {
-  try {
-    // Return empty array since we're transitioning away from posts
-    return [];
-  } catch (error) {
-    console.error("Error getting posts by user:", error);
-    return [];
-  }
-}
