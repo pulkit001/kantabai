@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { formatDate } from '@/lib/utils'
 import { 
   Package, 
   Plus, 
@@ -14,7 +15,8 @@ import {
   MapPin,
   Calendar,
   Minus,
-  MoreVertical
+  MoreVertical,
+  FileText
 } from 'lucide-react'
 import {
   DropdownMenu,
@@ -25,6 +27,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import AddIngredientDialog from './add-ingredient-dialog'
+import InvoiceUploadDialog from './invoice-upload-dialog'
 
 interface Ingredient {
   id: number
@@ -70,6 +73,7 @@ export default function IngredientsView({
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [showAddDialog, setShowAddDialog] = useState(false)
+  const [showInvoiceUpload, setShowInvoiceUpload] = useState(false)
 
   // Filter ingredients
   const filteredIngredients = ingredients.filter(ingredient => {
@@ -91,12 +95,7 @@ export default function IngredientsView({
     }
   }
 
-  // Format date
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return 'No date'
-    const date = new Date(dateString)
-    return date.toLocaleDateString()
-  }
+  // Note: formatDate is now imported from utils
 
   // Calculate days until expiry
   const getDaysUntilExpiry = (expiryDate: string | null | undefined) => {
@@ -176,6 +175,14 @@ export default function IngredientsView({
             <option value="Expired">Expired</option>
           </select>
 
+          <Button 
+            variant="outline"
+            onClick={() => setShowInvoiceUpload(true)}
+          >
+            <FileText className="h-4 w-4 mr-2" />
+            Add from Invoice
+          </Button>
+          
           <Button onClick={() => setShowAddDialog(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Add Item
@@ -308,6 +315,19 @@ export default function IngredientsView({
         onSuccess={() => {
           setShowAddDialog(false)
           // Refresh the page to show new ingredient
+          window.location.reload()
+        }}
+      />
+
+      {/* Invoice Upload Dialog */}
+      <InvoiceUploadDialog 
+        open={showInvoiceUpload}
+        onOpenChange={setShowInvoiceUpload}
+        kitchenId={kitchenId}
+        categories={categories}
+        onSuccess={() => {
+          setShowInvoiceUpload(false)
+          // Refresh the page to show new ingredients
           window.location.reload()
         }}
       />

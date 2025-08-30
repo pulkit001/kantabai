@@ -5,7 +5,8 @@ import {
   createUserIfNotExists,
   getDefaultKitchen, 
   getKitchensByUser,
-  getExpiringItems
+  getExpiringItems,
+  getExpiringItemsThisMonth
 } from "@/lib/db-utils";
 import ExpiryView from "@/components/expiry-view";
 
@@ -61,7 +62,7 @@ export default async function ExpiryPage({ searchParams }: ExpiryPageProps) {
   const [expiringToday, expiringWeek, expiringMonth] = await Promise.all([
     getExpiringItems(targetKitchen.id, 0), // Today
     getExpiringItems(targetKitchen.id, 7), // 7 days
-    getExpiringItems(targetKitchen.id, 30), // 30 days
+    getExpiringItemsThisMonth(targetKitchen.id), // This month but not this week
   ]);
 
   return (
