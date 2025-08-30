@@ -1,8 +1,20 @@
+"use client"
+
 import { Button } from "@/components/ui/button";
-import { SignUpButton } from "@clerk/nextjs";
+import { SignUpButton, useUser } from "@clerk/nextjs";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 export default function Home() {
+  const { isSignedIn } = useUser();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (isSignedIn) {
+      router.push("/dashboard");
+    }
+  }, [isSignedIn, router]);
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-4 md:p-8">
       <div className="z-10 max-w-5xl w-full items-center justify-center text-center">
