@@ -9,13 +9,10 @@ import InstallPrompt from '@/components/install-prompt'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://kantabai.vercel.app'),
   title: 'Kantabai',
   description: 'A modern Next.js PWA with authentication and database',
   manifest: '/manifest.json',
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: 'white' },
-    { media: '(prefers-color-scheme: dark)', color: '#09090b' },
-  ],
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
@@ -33,12 +30,23 @@ export const metadata: Metadata = {
     siteName: 'Kantabai',
     title: 'Kantabai',
     description: 'A modern Next.js PWA with authentication and database',
+    images: ['/icon-512x512.png'],
   },
   twitter: {
     card: 'summary',
     title: 'Kantabai',
     description: 'A modern Next.js PWA with authentication and database',
+    images: ['/icon-512x512.png'],
   },
+}
+
+export function generateViewport() {
+  return {
+    themeColor: [
+      { media: '(prefers-color-scheme: light)', color: 'white' },
+      { media: '(prefers-color-scheme: dark)', color: '#09090b' },
+    ],
+  }
 }
 
 export default function RootLayout({

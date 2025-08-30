@@ -11,7 +11,7 @@ export default function Home() {
             Kantabai
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto px-4">
-            A modern Next.js application with ShadCN UI components and Clerk authentication
+            Your smart kitchen assistant for managing ingredients, tracking expiry dates, and creating delicious recipes
           </p>
         </div>
       </div>
@@ -30,49 +30,49 @@ export default function Home() {
       <div className="grid gap-4 md:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4 max-w-6xl w-full px-4">
         <div className="group p-4 md:p-6 border rounded-lg hover:border-border hover:bg-muted/50 transition-colors">
           <h3 className="mb-2 md:mb-3 text-lg md:text-xl font-semibold">
-            ShadCN UI{' '}
+            🥕 Ingredient Tracking{' '}
             <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
               →
             </span>
           </h3>
           <p className="text-sm text-muted-foreground">
-            Beautiful and accessible UI components built with Radix UI and Tailwind CSS.
+            Track all your kitchen ingredients with quantities, locations, and expiry dates.
           </p>
         </div>
 
         <div className="group p-4 md:p-6 border rounded-lg hover:border-border hover:bg-muted/50 transition-colors">
           <h3 className="mb-2 md:mb-3 text-lg md:text-xl font-semibold">
-            Clerk Auth{' '}
+            ⏰ Expiry Alerts{' '}
             <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
               →
             </span>
           </h3>
           <p className="text-sm text-muted-foreground">
-            Complete authentication solution with social logins and user management.
+            Get notified when ingredients are about to expire to reduce food waste.
           </p>
         </div>
 
         <div className="group p-4 md:p-6 border rounded-lg hover:border-border hover:bg-muted/50 transition-colors">
           <h3 className="mb-2 md:mb-3 text-lg md:text-xl font-semibold">
-            TypeScript{' '}
+            👨‍🍳 Recipe Management{' '}
             <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
               →
             </span>
           </h3>
           <p className="text-sm text-muted-foreground">
-            Type-safe development with full TypeScript support and IntelliSense.
+            Create recipes and instantly check if you have all the required ingredients.
           </p>
         </div>
 
         <div className="group p-4 md:p-6 border rounded-lg hover:border-border hover:bg-muted/50 transition-colors">
           <h3 className="mb-2 md:mb-3 text-lg md:text-xl font-semibold">
-            Next.js 14{' '}
+            📱 Mobile PWA{' '}
             <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
               →
             </span>
           </h3>
           <p className="text-sm text-muted-foreground">
-            Latest Next.js with App Router, Server Components, and optimizations.
+            Install on your phone for quick kitchen access. Works offline too!
           </p>
         </div>
       </div>
