@@ -354,6 +354,38 @@ export async function updateItemQuantity(itemId: number, newQuantity: number, us
   }
 }
 
+export async function updateItem(itemId: number, itemData: Partial<NewItem>, userId?: string): Promise<Item | null> {
+  try {
+    // Get current item for logging
+    const [currentItem] = await db.select().from(items).where(eq(items.id, itemId));
+    if (!currentItem) throw new Error("Item not found");
+
+    // Update the item
+    const [updatedItem] = await db
+      .update(items)
+      .set({ 
+        ...itemData,
+        updatedAt: new Date()
+      })
+      .where(eq(items.id, itemId))
+      .returning();
+
+    // Log the action
+    await createItemLog({
+      itemId,
+      action: "Updated",
+      quantity: updatedItem.quantity,
+      previousQuantity: currentItem.quantity,
+      userId,
+    });
+
+    return updatedItem || null;
+  } catch (error) {
+    console.error("Error updating item:", error);
+    throw error;
+  }
+}
+
 export async function deleteItem(itemId: number, userId?: string): Promise<void> {
   try {
     // Get current item for logging
